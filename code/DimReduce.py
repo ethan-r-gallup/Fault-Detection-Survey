@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import Stats
 
 
 class PCA:
@@ -27,18 +28,27 @@ class PCA:
 
         #calculate Hotellings T^2 upper control limit
         t2 = np.array([xi.T @ self.PComponents @ (np.diag(self.Plam ** -1)) @ self.PComponents.T @ xi for xi in data.values])
-        self.T2thresh = stats.UCL(t2, t2_thresh)
+        self.T2thresh = Stats.UCL(t2, t2_thresh)
         
         #calculate the SPE upper control limit
         identity = np.identity(data.shape[1])
         q = np.array([xi.T @ (identity - self.PComponents @ self.PComponents.T) @ xi for xi in data.values])
-        self.Qthresh = stats.UCL(q, q_thresh)
+        self.Qthresh = Stats.UCL(q, q_thresh)
         
-    def score(self, y):
-        pass
+    def detect(self, y, visualize=True):
+        t2 = np.array([yi.T @ self.PComponents @ (np.diag(self.Plam ** -1)) @ self.PComponents.T @ yi for yi in y.values])
+        identity = np.identity(y.shape[1])
+        q = np.array([yi.T @ (identity - self.PComponents @ self.PComponents.T) @ yi for yi in y.values])
+        t_fault = t2 > self.T2thresh
+        q_fault = q >self.Qthresh
+        fault = t_fault | q_fault
+        if visualize:
+            self.visualize()
+        return fault, t2, q
 
-    def fit_score(self, data):
-        pass
+    def fit_detect(self, data, exp_var=0.99, t2_thresh='hotel', q_thresh='spe', visualize=True):
+        self.fit(data, exp_var, t2_thresh, q_thresh)
+        return self.detect(data, visualize)
 
     @staticmethod
     def number_pcs(lam, var):
@@ -49,3 +59,12 @@ class PCA:
             var_exp += lam[num_pcs] / tot_var
             num_pcs += 1
         return num_pcs
+
+class DiPCA:
+    pass
+
+class CVA:
+    pass
+
+class ICA:
+    pass
